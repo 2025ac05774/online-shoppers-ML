@@ -1,9 +1,10 @@
+import json
 import sys
+
 import pandas as pd
 from pathlib import Path
 import joblib
 import pandas as pd
-
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -184,13 +185,14 @@ def main() -> None:
 
         results[name] = evaluate(pipeline, X_test, y_test)
 
+        filename = f"{slugify(name)}.joblib"
+        joblib.dump(pipeline, MODEL_DIR / filename)
+        index[name] = filename
         print("   " + "  ".join(f"{k}={v:.4f}" for k, v in results[name].items()))
 
     test_frame = X_test.copy()
     test_frame[TARGET] = y_test.values
     test_frame.to_csv(ROOT / "test_data.csv", index=False)
-
-
 
 
 if __name__ == "__main__":
