@@ -78,10 +78,6 @@ def load_dataset() -> pd.DataFrame:
     repo = fetch_ucirepo(id=468)
     frame = pd.concat([repo.data.features, repo.data.targets], axis=1)
 
-    DATA_DIR.mkdir(exist_ok=True)
-    cache = DATA_DIR / "online_shoppers_intention.csv"
-    frame.to_csv(cache, index=False)
-    print(f"Cached a copy at {cache}")
     return frame
 
 def to_binary(series: pd.Series) -> pd.Series:
