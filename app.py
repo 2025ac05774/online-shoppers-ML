@@ -203,3 +203,30 @@ with tab_single:
         zero_division=0,
     )
     st.dataframe(pd.DataFrame(report).T.round(4), use_container_width=True)
+
+with tab_compare:
+    st.subheader("All models comparison")
+
+    with st.spinner("Loading..."):
+        rows = []
+        for name, model in models.items():
+            try:
+                s = score(model, X, y_true)
+            except Exception:
+                continue
+            rows.append(
+                {
+                    "ML Model Name": name,
+                    **{m: round(s[m], 4) for m in
+                    ["Accuracy", "AUC", "Precision", "Recall", "F1", "MCC"]},
+                }
+            )
+
+        if not rows:
+            st.error("None of the models could score this file.")
+        else:
+            table = pd.DataFrame(rows).set_index("ML Model Name")
+            st.dataframe(
+                table.style.highlight_max(axis=0, color="#c6f0d4"),
+                use_container_width=True,
+            )
