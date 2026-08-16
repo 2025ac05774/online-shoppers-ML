@@ -126,18 +126,6 @@ def make_preprocessor() -> ColumnTransformer:
         remainder="drop",
     )
 
-def evaluate(pipeline, X_test, y_test) -> dict:
-    y_pred = pipeline.predict(X_test)
-    y_proba = pipeline.predict_proba(X_test)[:, 1]
-    return {
-        "Accuracy": accuracy_score(y_test, y_pred),
-        "AUC": roc_auc_score(y_test, y_proba),
-        "Precision": precision_score(y_test, y_pred, zero_division=0),
-        "Recall": recall_score(y_test, y_pred, zero_division=0),
-        "F1": f1_score(y_test, y_pred, zero_division=0),
-        "MCC": matthews_corrcoef(y_test, y_pred),
-    }
-
 
 def slugify(name: str) -> str:
     return name.lower().replace(" ", "_")
@@ -162,8 +150,6 @@ def main() -> None:
     print(f"Train: {len(X_train):,}   Test: {len(X_test):,}")
 
     MODEL_DIR.mkdir(exist_ok=True)
-    results: dict = {}
-    index: dict = {}
 
     for name, estimator in build_models().items():
         print(f"\nTraining {name}...")
@@ -172,12 +158,8 @@ def main() -> None:
         )
         pipeline.fit(X_train, y_train)
 
-        results[name] = evaluate(pipeline, X_test, y_test)
-
         filename = f"{slugify(name)}.joblib"
         joblib.dump(pipeline, MODEL_DIR / filename)
-        index[name] = filename
-        print("   " + "  ".join(f"{k}={v:.4f}" for k, v in results[name].items()))
 
     test_frame = X_test.copy()
     test_frame[TARGET] = y_test.values

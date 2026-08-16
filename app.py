@@ -1,6 +1,7 @@
 import streamlit as st;
 
 import joblib
+import matplotlib.pyplot as plt
 from pathlib import Path
 import pandas as pd
 import seaborn as sns
@@ -71,6 +72,20 @@ def coerce_target(series: pd.Series) -> pd.Series:
         )
     return series.astype(int)
 
+def score(model, X, y_true) -> dict:
+    y_pred = model.predict(X)
+    y_proba = model.predict_proba(X)[:, 1]
+    return {
+        "y_pred": y_pred,
+        "y_proba": y_proba,
+        "Accuracy": accuracy_score(y_true, y_pred),
+        "AUC": roc_auc_score(y_true, y_proba),
+        "Precision": precision_score(y_true, y_pred, zero_division=0),
+        "Recall": recall_score(y_true, y_pred, zero_division=0),
+        "F1": f1_score(y_true, y_pred, zero_division=0),
+        "MCC": matthews_corrcoef(y_true, y_pred),
+    }
+
 
 # --------------------------------------------------------------------------
 # Sidebar
@@ -122,3 +137,69 @@ if TARGET not in data.columns:
 
 y_true = coerce_target(data[TARGET])
 X = data.drop(columns=[TARGET])
+
+# --------------------------------------------------------------------------
+# Tabs
+# --------------------------------------------------------------------------
+tab_single, tab_compare = st.tabs(
+    ["Selected model", "Compare all models"]
+)
+
+with tab_single:
+    try:
+        result = score(models[chosen], X, y_true)
+    except Exception as exc:
+        st.error(f"Could not score this file with **{chosen}**: {exc}")
+        st.stop()
+
+    st.subheader(f"{chosen} — evaluation metrics")
+
+    cols = st.columns(6)
+    for col, metric in zip(
+        cols, ["Accuracy", "AUC", "Precision", "Recall", "F1", "MCC"]
+    ):
+        col.metric(metric, f"{result[metric]:.4f}")
+
+    st.markdown("---")
+    left, right = st.columns([1, 1])
+
+    with left:
+        st.subheader("Confusion matrix")
+        cm = confusion_matrix(y_true, result["y_pred"])
+        fig, ax = plt.subplots(figsize=(4.5, 3.8))
+        sns.heatmap(
+            cm,
+            annot=True,
+            fmt="d",
+            cmap="Blues",
+            cbar=False,
+            xticklabels=["No purchase", "Purchase"],
+            yticklabels=["No purchase", "Purchase"],
+            ax=ax,
+        )
+        ax.set_xlabel("Predicted")
+        ax.set_ylabel("Actual")
+        st.pyplot(fig)
+        plt.close(fig)
+
+    with right:
+        st.subheader("ROC curve")
+        fpr, tpr, _ = roc_curve(y_true, result["y_proba"])
+        fig, ax = plt.subplots(figsize=(4.5, 3.8))
+        ax.plot(fpr, tpr, label=f"AUC = {result['AUC']:.4f}")
+        ax.plot([0, 1], [0, 1], "--", color="grey", linewidth=1)
+        ax.set_xlabel("False positive rate")
+        ax.set_ylabel("True positive rate")
+        ax.legend(loc="lower right")
+        st.pyplot(fig)
+        plt.close(fig)
+
+    st.subheader("Classification report")
+    report = classification_report(
+        y_true,
+        result["y_pred"],
+        target_names=["No purchase", "Purchase"],
+        output_dict=True,
+        zero_division=0,
+    )
+    st.dataframe(pd.DataFrame(report).T.round(4), use_container_width=True)
