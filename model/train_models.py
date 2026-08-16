@@ -1,4 +1,3 @@
-import json
 import sys
 
 import pandas as pd
@@ -59,15 +58,9 @@ CATEGORICAL_FEATURES = [
 ]
 
 def load_dataset() -> pd.DataFrame:
-    """Read the dataset from disk if present, otherwise pull it from UCI."""
 
-    path = DATA_DIR / "online_shoppers_intention.csv"
-
-    if path.exists():
-        print(f"Reading local copy: {path}")
-        return pd.read_csv(path)
-
-    print("No local copy found - fetching from the UCI repository...")
+    print("fetching from the UCI repository...")
+    
     try:
         from ucimlrepo import fetch_ucirepo
     except ImportError:
