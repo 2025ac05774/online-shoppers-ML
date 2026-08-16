@@ -1,7 +1,5 @@
 # Predicting Online Shopper Purchase Intention
 
-Machine Learning Assignment 2 — M.Tech (AIML/DSE), BITS Pilani WILP.
-
 **Live app:** https://online-shoppers-pred.streamlit.app/
 
 ---
